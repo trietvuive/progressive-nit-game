@@ -148,53 +148,109 @@ def calculate_genie_amount(
     )
 
 
-def print_matrix(buttons_remaining: int):
-    """Print 2D matrices of EV and genie values for a given number of buttons remaining."""
-    if buttons_remaining < 0:
-        print(f"Error: Invalid buttons remaining (buttons_remaining={buttons_remaining})")
-        return
-
-    # Calculate valid range for players_without_button: min is TOTAL_PLAYERS - (# buttons given out) - 1
-    buttons_given_out = TOTAL_BUTTONS - buttons_remaining
-    pwb_min = max(0, TOTAL_PLAYERS - buttons_given_out - 1)
-    pwb_max = TOTAL_PLAYERS - 1
-
-    # Header row
-    header = "own\\pwb |" + "".join(f"{pwb:>8}" for pwb in range(pwb_min, pwb_max + 1))
+def _print_2d_matrix(
+    fixed_name: str,
+    fixed_value: int,
+    row_name: str,
+    row_range: range,
+    col_name: str,
+    col_range: range,
+    get_state: callable,  # (row_val, col_val) -> (buttons_owned, buttons_remaining, players_without_button)
+):
+    """Generic function to print EV and Genie matrices."""
+    # Build header
+    row_abbrev = row_name[:3]
+    col_abbrev = col_name[:3]
+    header = f"{row_abbrev}\\{col_abbrev} |" + "".join(f"{c:>8}" for c in col_range)
     separator = "-" * len(header)
 
     # EV Matrix
-    print(f"\n=== EV Matrix for buttons_remaining={buttons_remaining} ===")
-    print(f"Rows: buttons_owned, Columns: players_without_button\n")
+    print(f"\n=== EV Matrix for {fixed_name}={fixed_value} ===")
+    print(f"Rows: {row_name}, Columns: {col_name}\n")
     print(header)
     print(separator)
 
-    for buttons_owned in range(TOTAL_BUTTONS + 1 - buttons_remaining):
-        row = f"{buttons_owned:>7} |"
-        for pwb in range(pwb_min, pwb_max + 1):
-            if is_valid_state(buttons_owned, buttons_remaining, pwb):
-                ev = closed_form_ev(buttons_owned, buttons_remaining, pwb)
+    for row_val in row_range:
+        row = f"{row_val:>7} |"
+        for col_val in col_range:
+            bo, br, pwb = get_state(row_val, col_val)
+            if is_valid_state(bo, br, pwb):
+                ev = closed_form_ev(bo, br, pwb)
                 row += f"{ev:>8.2f}"
             else:
                 row += f"{'---':>8}"
         print(row)
 
-    # Genie Matrix (only if buttons_remaining > 0)
-    if buttons_remaining > 0:
-        print(f"\n=== Genie Matrix for buttons_remaining={buttons_remaining} ===")
-        print(f"Rows: buttons_owned, Columns: players_without_button\n")
-        print(header)
-        print(separator)
+    # Genie Matrix
+    print(f"\n=== Genie Matrix for {fixed_name}={fixed_value} ===")
+    print(f"Rows: {row_name}, Columns: {col_name}\n")
+    print(header)
+    print(separator)
 
-        for buttons_owned in range(TOTAL_BUTTONS + 1 - buttons_remaining):
-            row = f"{buttons_owned:>7} |"
-            for pwb in range(pwb_min, pwb_max + 1):
-                if is_valid_state(buttons_owned, buttons_remaining, pwb):
-                    genie = calculate_genie_amount(buttons_owned, buttons_remaining, pwb)
-                    row += f"{genie:>8.2f}"
-                else:
-                    row += f"{'---':>8}"
-            print(row)
+    for row_val in row_range:
+        row = f"{row_val:>7} |"
+        for col_val in col_range:
+            bo, br, pwb = get_state(row_val, col_val)
+            if is_valid_state(bo, br, pwb) and br > 0:
+                genie = calculate_genie_amount(bo, br, pwb)
+                row += f"{genie:>8.2f}"
+            else:
+                row += f"{'---':>8}"
+        print(row)
+
+
+def print_matrix(buttons_remaining: int = None, buttons_owned: int = None, players_without_button: int = None):
+    """
+    Print 2D matrices of EV and genie values.
+    Specify exactly one parameter to fix that dimension and show the 2D matrix of the other two.
+    """
+    specified = sum(x is not None for x in [buttons_remaining, buttons_owned, players_without_button])
+    
+    if specified != 1:
+        print("Error: Specify exactly one of --buttons_remaining, --buttons_owned, or --players_without_button")
+        return
+    
+    if buttons_remaining is not None:
+        if buttons_remaining < 0 or buttons_remaining > TOTAL_BUTTONS:
+            print(f"Error: Invalid buttons_remaining={buttons_remaining}")
+            return
+        buttons_given_out = TOTAL_BUTTONS - buttons_remaining
+        pwb_min = max(0, TOTAL_PLAYERS - buttons_given_out - 1)
+        _print_2d_matrix(
+            fixed_name="buttons_remaining",
+            fixed_value=buttons_remaining,
+            row_name="buttons_owned",
+            row_range=range(TOTAL_BUTTONS - buttons_remaining + 1),
+            col_name="players_without_button",
+            col_range=range(pwb_min, TOTAL_PLAYERS),
+            get_state=lambda bo, pwb: (bo, buttons_remaining, pwb),
+        )
+    elif buttons_owned is not None:
+        if buttons_owned < 0 or buttons_owned > TOTAL_BUTTONS:
+            print(f"Error: Invalid buttons_owned={buttons_owned}")
+            return
+        _print_2d_matrix(
+            fixed_name="buttons_owned",
+            fixed_value=buttons_owned,
+            row_name="buttons_remaining",
+            row_range=range(TOTAL_BUTTONS + 1),
+            col_name="players_without_button",
+            col_range=range(TOTAL_PLAYERS),
+            get_state=lambda br, pwb: (buttons_owned, br, pwb),
+        )
+    else:
+        if players_without_button < 0 or players_without_button >= TOTAL_PLAYERS:
+            print(f"Error: Invalid players_without_button={players_without_button}")
+            return
+        _print_2d_matrix(
+            fixed_name="players_without_button",
+            fixed_value=players_without_button,
+            row_name="buttons_remaining",
+            row_range=range(TOTAL_BUTTONS + 1),
+            col_name="buttons_owned",
+            col_range=range(TOTAL_BUTTONS + 1),
+            get_state=lambda br, bo: (bo, br, players_without_button),
+        )
 
 
 def main():
@@ -233,10 +289,16 @@ def main():
 
     # Command 3: matrix
     matrix_parser = subparsers.add_parser(
-        "matrix", help="Print 2D matrix for given buttons remaining"
+        "matrix", help="Print 2D matrix (specify exactly one dimension to fix)"
     )
     matrix_parser.add_argument(
-        "buttons_remaining", type=int, help="Number of buttons remaining"
+        "--buttons_remaining", type=int, default=None, help="Fix buttons_remaining, show buttons_owned vs players_without_button"
+    )
+    matrix_parser.add_argument(
+        "--buttons_owned", type=int, default=None, help="Fix buttons_owned, show buttons_remaining vs players_without_button"
+    )
+    matrix_parser.add_argument(
+        "--players_without_button", type=int, default=None, help="Fix players_without_button, show buttons_remaining vs buttons_owned"
     )
 
     args = parser.parse_args()
@@ -262,7 +324,7 @@ def main():
             f"Max genie payment(buttons_owned={args.buttons_owned}, buttons_remaining={args.buttons_remaining}, players_without_button={args.players_without_button}) = {amount:.2f}"
         )
     elif args.command == "matrix":
-        print_matrix(args.buttons_remaining)
+        print_matrix(args.buttons_remaining, args.buttons_owned, args.players_without_button)
     else:
         parser.print_help()
 
