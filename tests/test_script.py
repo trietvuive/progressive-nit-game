@@ -17,7 +17,7 @@ class TestExpectedValueFormulas(unittest.TestCase):
     """Test that recurrence and closed form EV formulas produce similar results."""
 
     def test_recurrence_vs_closed_form_within_tolerance(self):
-        """Verify recurrence EV and closed form EV are within 0.5 of each other."""
+        """Verify recurrence EV and closed form EV are close to each other."""
         tolerance = 1e-6
         failures = []
 
