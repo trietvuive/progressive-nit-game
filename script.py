@@ -12,20 +12,39 @@ Expected value of the progressive nit game
     it doesn't matter how the rest of the buttons you don't have are distributed
 """
 @lru_cache(maxsize=None)
-def expected_value(buttons_owned: float, buttons_remaining: float, players_without_button: float) -> float:
+def expected_value_recurrence(buttons_owned: float, buttons_remaining: float, players_without_button: float) -> float:
     # when the game resolves, you get -40 if you have no button
     # otherwise, you get BUTTON_VALUE * players_without_button for each button you own
     if buttons_remaining == 0:
         return -BUTTON_VALUE * TOTAL_BUTTONS if buttons_owned == 0 else buttons_owned * BUTTON_VALUE * players_without_button
     
     # you win a button with probability 1 / TOTAL_PLAYERS
-    ev_you_win_button = 1 / TOTAL_PLAYERS * expected_value(buttons_owned + 1, buttons_remaining - 1, players_without_button)
+    ev_you_win_button = 1 / TOTAL_PLAYERS * expected_value_recurrence(buttons_owned + 1, buttons_remaining - 1, players_without_button)
     # people who don't have buttons win a button with probability players_without_button / TOTAL_PLAYERS
-    ev_losers_win_button = players_without_button / TOTAL_PLAYERS * expected_value(buttons_owned, buttons_remaining - 1, players_without_button - 1)
+    ev_losers_win_button = players_without_button / TOTAL_PLAYERS * expected_value_recurrence(buttons_owned, buttons_remaining - 1, players_without_button - 1)
     # people who have buttons win a button with probability (TOTAL_PLAYERS - 1 - players_without_button) / TOTAL_PLAYERS
-    ev_winners_win_button = (TOTAL_PLAYERS - 1 - players_without_button) / TOTAL_PLAYERS * expected_value(buttons_owned, buttons_remaining - 1, players_without_button)
+    ev_winners_win_button = (TOTAL_PLAYERS - 1 - players_without_button) / TOTAL_PLAYERS * expected_value_recurrence(buttons_owned, buttons_remaining - 1, players_without_button)
 
     return ev_you_win_button + ev_losers_win_button + ev_winners_win_button
+
+"""
+Closed form expected value formula
+"""
+def closed_form_ev(k, r, m):
+    # k: buttons_owned, r: buttons_remaining, m: players_without_button
+    # N: TOTAL_PLAYERS, B: TOTAL_BUTTONS, V: BUTTON_VALUE
+    
+    # The probability that any players without a button will remain without buttons at the end of the cycle
+    prob_stay_zero_button = ((TOTAL_PLAYERS - 1) / TOTAL_PLAYERS) ** r
+    
+    if k > 0:
+        # Expected buttons you'll have * Expected losers * Value
+        return (k + r / TOTAL_PLAYERS) * BUTTON_VALUE * (m * prob_stay_zero_button)
+    else:
+        # Reward component (if you get a button) + Penalty component (if you don't)
+        reward_comp = (r / TOTAL_PLAYERS) * BUTTON_VALUE * (m * prob_stay_zero_button)
+        penalty_comp = -BUTTON_VALUE * TOTAL_BUTTONS * prob_stay_zero_button
+        return reward_comp + penalty_comp
 
 """
 The maximum amount you should pay genie to win a button is the expected value of winning a button minus your current expected value
@@ -34,7 +53,7 @@ The maximum amount you should pay genie to win a button is the expected value of
     players_without_button: number of other players without a button (excluding yourself)
 """
 def calculate_genie_amount(buttons_owned: float, buttons_remaining: float, players_without_button: float) -> float:
-    return expected_value(buttons_owned + 1, buttons_remaining - 1, players_without_button) - expected_value(buttons_owned, buttons_remaining, players_without_button)
+    return expected_value_recurrence(buttons_owned + 1, buttons_remaining - 1, players_without_button) - expected_value_recurrence(buttons_owned, buttons_remaining, players_without_button)
 
 def print_matrix(buttons_remaining: int):
     """Print 2D matrices of EV and genie values for a given number of buttons remaining."""
@@ -56,7 +75,7 @@ def print_matrix(buttons_remaining: int):
     for buttons_owned in range(TOTAL_BUTTONS + 1 - buttons_remaining):
         row = f"{buttons_owned:>7} |"
         for pwb in range(pwb_min, pwb_max + 1):
-            ev = expected_value(buttons_owned, buttons_remaining, pwb)
+            ev = expected_value_recurrence(buttons_owned, buttons_remaining, pwb)
             row += f"{ev:>8.2f}"
         print(row)
     
