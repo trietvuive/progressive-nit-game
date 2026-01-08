@@ -72,11 +72,14 @@ def closed_form_ev(buttons_owned, buttons_remaining, players_without_button):
 
     if buttons_owned > 0:
         # Path 1: Value from buttons you currently hold
-        # These buttons only pay out if the 'm' losers lose ALL remaining r buttons
+        # The expected amount of losers at the end is players_without_button * prob_lose_all
+        # The expected value of your holding (in buttons) is buttons_owned * expected_amount_of_losers
         holdings_ev = buttons_owned * players_without_button * prob_lose_all
 
-        # Path 2: Value from buttons you are expected to win (r/TOTAL_PLAYERS)
-        # For each button you win, the 'm' losers only need to lose the OTHER r-1 buttons
+        # Path 2: Value from buttons you are expected to win (1/TOTAL_PLAYERS * buttons_remaining)
+        # For each button you win, the losers only need to lose the OTHER r-1 buttons
+        # The expected amount of losers at the end is players_without_button * prob_lose_others
+        # The expected value of your winning (in buttons) is expected_new_buttons * expected_amount_of_losers
         expected_new_buttons = buttons_remaining / TOTAL_PLAYERS
         gains_ev = expected_new_buttons * players_without_button * prob_lose_others
 
@@ -104,6 +107,10 @@ def is_valid_state(buttons_owned: int, buttons_remaining: int, players_without_b
     Invalid states include cases like (0, 9, 6) where 1 button was given out but
     no one has it (you have 0, all 6 others still don't have buttons).
     """
+    # Must have buttons remaining
+    if buttons_remaining < 0 or buttons_owned < 0 or players_without_button < 0:
+        return False
+    
     buttons_given_out = TOTAL_BUTTONS - buttons_remaining
     buttons_to_others = buttons_given_out - buttons_owned
     other_winners = TOTAL_PLAYERS - 1 - players_without_button
@@ -143,6 +150,10 @@ def calculate_genie_amount(
 
 def print_matrix(buttons_remaining: int):
     """Print 2D matrices of EV and genie values for a given number of buttons remaining."""
+    if buttons_remaining < 0:
+        print(f"Error: Invalid buttons remaining (buttons_remaining={buttons_remaining})")
+        return
+
     # Calculate valid range for players_without_button: min is TOTAL_PLAYERS - (# buttons given out) - 1
     buttons_given_out = TOTAL_BUTTONS - buttons_remaining
     pwb_min = max(0, TOTAL_PLAYERS - buttons_given_out - 1)
@@ -162,7 +173,7 @@ def print_matrix(buttons_remaining: int):
         row = f"{buttons_owned:>7} |"
         for pwb in range(pwb_min, pwb_max + 1):
             if is_valid_state(buttons_owned, buttons_remaining, pwb):
-                ev = expected_value_recurrence(buttons_owned, buttons_remaining, pwb)
+                ev = closed_form_ev(buttons_owned, buttons_remaining, pwb)
                 row += f"{ev:>8.2f}"
             else:
                 row += f"{'---':>8}"
