@@ -60,29 +60,41 @@ Closed form expected value formula
 
 
 def closed_form_ev(buttons_owned, buttons_remaining, players_without_button):
-    # the probability of a player without button ends the game without a button
+    # Probability a specific player misses a specific button
     q = (TOTAL_PLAYERS - 1) / TOTAL_PLAYERS
-    prob_remaining_zero = q ** (buttons_remaining - 1)
+
+    # Probability a loser loses ALL remaining r buttons
+    prob_lose_all = q**buttons_remaining
+
+    # Probability a loser loses r-1 buttons
+    # (Used when you 'consume' one button by winning it yourself)
+    prob_lose_others = q ** (buttons_remaining - 1)
 
     if buttons_owned > 0:
-        # Current buttons multiplied by the probability they still yield value from 'm' losers        expected_holdings_impact =
-        expected_holdings_impact = buttons_owned * players_without_button * q
-        # potential buttons you win multiplied by the probability those rounds yield value
-        expected_gains_impact = (
-            buttons_remaining * players_without_button
-        ) / TOTAL_PLAYERS
-        return (
-            BUTTON_VALUE
-            * (expected_holdings_impact + expected_gains_impact)
-            * prob_remaining_zero
-        )
+        # Path 1: Value from buttons you currently hold
+        # These buttons only pay out if the 'm' losers lose ALL remaining r buttons
+        holdings_ev = buttons_owned * players_without_button * prob_lose_all
+
+        # Path 2: Value from buttons you are expected to win (r/TOTAL_PLAYERS)
+        # For each button you win, the 'm' losers only need to lose the OTHER r-1 buttons
+        expected_new_buttons = buttons_remaining / TOTAL_PLAYERS
+        gains_ev = expected_new_buttons * players_without_button * prob_lose_others
+
+        return BUTTON_VALUE * (holdings_ev + gains_ev)
+
     else:
-        # Expected Reward if you win a button - Expected Penalty if you don't
-        reward_term = (
-            BUTTON_VALUE * players_without_button * buttons_remaining
-        ) / TOTAL_PLAYERS
-        penalty_term = BUTTON_VALUE * TOTAL_BUTTONS * q
-        return (reward_term - penalty_term) * prob_remaining_zero
+        # If you own 0, you have two mutually exclusive futures:
+
+        # Future A: You win at least one button (Expected Reward)
+        # Same logic as 'gains_ev' above
+        expected_new_buttons = buttons_remaining / TOTAL_PLAYERS
+        reward_ev = expected_new_buttons * players_without_button * prob_lose_others
+
+        # Future B: You win ZERO buttons (Expected Penalty)
+        # Probability of winning zero is q^r
+        penalty_ev = TOTAL_BUTTONS * prob_lose_all
+
+        return BUTTON_VALUE * (reward_ev - penalty_ev)
 
 
 """
