@@ -9,3 +9,7 @@ Situation 2: At the end, 2 players don't have a button. They both must pay $4/bu
 Situation 3: You won all 10 buttons. The other 9 players must pay you $4/button, so you get $36/button, so you get $360.
 
 Can you properly calculate how much each button should be worth for you as well as other players and adjust your strategy accordingly?
+
+# Usage
+To use the script
+> python3 script.py [command] [arguments]

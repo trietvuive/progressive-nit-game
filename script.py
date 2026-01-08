@@ -60,7 +60,7 @@ def print_matrix(buttons_remaining: int):
             row += f"{ev:>8.2f}"
         print(row)
     
-    # Genie Matrix (only if buttons_remaining > 0, since genie needs buttons remaining)
+    # Genie Matrix (only if buttons_remaining > 0)
     if buttons_remaining > 0:
         print(f"\n=== Genie Matrix for buttons_remaining={buttons_remaining} ===")
         print(f"Rows: buttons_owned, Columns: players_without_button\n")
