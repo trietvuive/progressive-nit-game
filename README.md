@@ -11,6 +11,8 @@ Situation 3: You won all 10 buttons. The other 9 players must pay you $4/button,
 
 Can you properly calculate how much each button should be worth for you as well as other players and adjust your strategy accordingly?
 
+A small added twist here is that you can pay a genie to win a button instead of leaving it to chance. In poker, this is effectively how much you should bet if it will push other people out and let you win a button. Can you calculate the threshold of this "genie" payment?
+
 # Usage
 Example:
 
