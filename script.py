@@ -1,8 +1,9 @@
 from functools import lru_cache
+import argparse
 
 TOTAL_PLAYERS = 7
 TOTAL_BUTTONS = 10
-BUTTON_VALUE = 4
+BUTTON_VALUE = 5
 
 """
 Expected value of the progressive nit game
@@ -254,8 +255,6 @@ def print_matrix(buttons_remaining: int = None, buttons_owned: int = None, playe
 
 
 def main():
-    import argparse
-
     parser = argparse.ArgumentParser(description="Progressive Nit Game Calculator")
     subparsers = parser.add_subparsers(dest="command", help="Available commands")
 
