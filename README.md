@@ -11,5 +11,17 @@ Situation 3: You won all 10 buttons. The other 9 players must pay you $4/button,
 Can you properly calculate how much each button should be worth for you as well as other players and adjust your strategy accordingly?
 
 # Usage
-To use the script
-> python3 script.py [command] [arguments]
+Example:
+
+Getting EV if you have 2 buttons, 3 buttons remaining and 4 players without button
+```bash 
+python3 script.py ev 2 3 4
+```
+Getting genie payment if you have 0 button, 1 button remaining and 4 players without button
+```bash
+python3 script.py genie 0 1 4
+```
+Getting both EV and genie matrix if there are 9 buttons remaining
+```bash
+python3 script.py matrix 9
+```
