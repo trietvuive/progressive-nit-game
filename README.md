@@ -1,3 +1,4 @@
+# Context
 In poker, there's a game called progressive nit game. There's a fixed amount of buttons at the start of each cycle, and you get a button if you win a hand. At the end, whoever doesn't have a button must pay a fixed amount per button to everyone without a button.
 
 Example: 7 players, 10 buttons, $4/button
