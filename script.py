@@ -97,6 +97,32 @@ def closed_form_ev(buttons_owned, buttons_remaining, players_without_button):
         return BUTTON_VALUE * (reward_ev - penalty_ev)
 
 
+def is_valid_state(buttons_owned: int, buttons_remaining: int, players_without_button: int) -> bool:
+    """
+    Check if a state is reachable from the initial state (0, TOTAL_BUTTONS, TOTAL_PLAYERS-1).
+    
+    Invalid states include cases like (0, 9, 6) where 1 button was given out but
+    no one has it (you have 0, all 6 others still don't have buttons).
+    """
+    buttons_given_out = TOTAL_BUTTONS - buttons_remaining
+    buttons_to_others = buttons_given_out - buttons_owned
+    other_winners = TOTAL_PLAYERS - 1 - players_without_button
+    
+    # Can't have negative buttons to others
+    if buttons_to_others < 0:
+        return False
+    
+    # Each other winner needs at least 1 button
+    if other_winners > buttons_to_others:
+        return False
+    
+    # If buttons were given to others, at least one other player must have won
+    if buttons_to_others > 0 and other_winners == 0:
+        return False
+    
+    return True
+
+
 """
 The maximum amount you should pay genie to win a button is the expected value of winning a button minus your current expected value
     buttons_owned: number of buttons that you have
@@ -135,8 +161,11 @@ def print_matrix(buttons_remaining: int):
     for buttons_owned in range(TOTAL_BUTTONS + 1 - buttons_remaining):
         row = f"{buttons_owned:>7} |"
         for pwb in range(pwb_min, pwb_max + 1):
-            ev = expected_value_recurrence(buttons_owned, buttons_remaining, pwb)
-            row += f"{ev:>8.2f}"
+            if is_valid_state(buttons_owned, buttons_remaining, pwb):
+                ev = expected_value_recurrence(buttons_owned, buttons_remaining, pwb)
+                row += f"{ev:>8.2f}"
+            else:
+                row += f"{'---':>8}"
         print(row)
 
     # Genie Matrix (only if buttons_remaining > 0)
@@ -149,8 +178,11 @@ def print_matrix(buttons_remaining: int):
         for buttons_owned in range(TOTAL_BUTTONS + 1 - buttons_remaining):
             row = f"{buttons_owned:>7} |"
             for pwb in range(pwb_min, pwb_max + 1):
-                genie = calculate_genie_amount(buttons_owned, buttons_remaining, pwb)
-                row += f"{genie:>8.2f}"
+                if is_valid_state(buttons_owned, buttons_remaining, pwb):
+                    genie = calculate_genie_amount(buttons_owned, buttons_remaining, pwb)
+                    row += f"{genie:>8.2f}"
+                else:
+                    row += f"{'---':>8}"
             print(row)
 
 
@@ -199,6 +231,9 @@ def main():
     args = parser.parse_args()
 
     if args.command == "ev":
+        if not is_valid_state(args.buttons_owned, args.buttons_remaining, args.players_without_button):
+            print(f"Error: Invalid state (buttons_owned={args.buttons_owned}, buttons_remaining={args.buttons_remaining}, players_without_button={args.players_without_button}) is not reachable.")
+            return
         ev = closed_form_ev(
             args.buttons_owned, args.buttons_remaining, args.players_without_button
         )
@@ -206,6 +241,9 @@ def main():
             f"EV(buttons_owned={args.buttons_owned}, buttons_remaining={args.buttons_remaining}, players_without_button={args.players_without_button}) = {ev:.2f}"
         )
     elif args.command == "genie":
+        if not is_valid_state(args.buttons_owned, args.buttons_remaining, args.players_without_button):
+            print(f"Error: Invalid state (buttons_owned={args.buttons_owned}, buttons_remaining={args.buttons_remaining}, players_without_button={args.players_without_button}) is not reachable.")
+            return
         amount = calculate_genie_amount(
             args.buttons_owned, args.buttons_remaining, args.players_without_button
         )

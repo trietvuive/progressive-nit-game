@@ -8,6 +8,7 @@ import unittest
 from script import (
     expected_value_recurrence,
     closed_form_ev,
+    is_valid_state,
     TOTAL_PLAYERS,
     TOTAL_BUTTONS,
 )
@@ -28,6 +29,10 @@ class TestExpectedValueFormulas(unittest.TestCase):
 
             for buttons_owned in range(TOTAL_BUTTONS + 1 - buttons_remaining):
                 for players_without_button in range(pwb_min, pwb_max + 1):
+                    # Skip invalid/unreachable states
+                    if not is_valid_state(buttons_owned, buttons_remaining, players_without_button):
+                        continue
+                    
                     recurrence_ev = expected_value_recurrence(
                         buttons_owned, buttons_remaining, players_without_button
                     )
